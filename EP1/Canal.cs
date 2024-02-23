@@ -1,6 +1,6 @@
 ﻿using System.Text.Json;
 
-namespace EP1.Model;
+namespace EP1;
 
 internal class Configs
 {
@@ -15,7 +15,7 @@ internal class Canal
 {
     public Configs Configs { get; private set; }
 
-    public Canal() 
+    public Canal()
     {
         CarregarConfigs();
     }

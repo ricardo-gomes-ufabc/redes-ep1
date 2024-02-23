@@ -5,16 +5,30 @@
     <TargetFramework>net8.0</TargetFramework>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
+    <Configurations>Servidor_Debug;Servidor_Release;Cliente_Debug;Cliente_Release</Configurations>
   </PropertyGroup>
 
   <ItemGroup>
     <PackageReference Include="CommandLineParser" Version="2.9.1" />
   </ItemGroup>
+  
+  <Choose>
+    <When Condition="'$(Configuration)' == 'Servidor_Debug' Or '$(Configuration)' == 'Servidor_Release'">
+      <PropertyGroup>
+        <StartupObject>EP1.Servidor</StartupObject>
+      </PropertyGroup>
 
-  <ItemGroup>
-    <None Update="appsettings.json">
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </None>
-  </ItemGroup>
+      <ItemGroup>
+        <None Update="appsettings.json">
+          <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+        </None>
+      </ItemGroup>
+    </When>
+    <Otherwise>
+      <PropertyGroup>
+        <StartupObject>EP1.Cliente</StartupObject>
+      </PropertyGroup>
+    </Otherwise>
+  </Choose>  
 
 </Project>
