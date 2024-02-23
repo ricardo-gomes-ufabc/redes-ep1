@@ -1,4 +1,5 @@
 ﻿using CommandLine;
+using EP1.Model;
 
 namespace EP1;
 
@@ -6,11 +7,8 @@ internal class Program
 {
     public class Options
     {
-        [Option('s', "servidor", Required = true, Default = false, HelpText = "Opção para rodar o programa em modo servidor", SetName = "ModoServidor")]
+        [Option('s', "servidor", Required = false, Default = false, HelpText = "Opção para rodar o programa em modo servidor", SetName = "ModoServidor")]
         public bool ModoServidor { get; set; }
-
-        [Option('c', "cliente", Required = true, Default = false, HelpText = "Opção para rodar o programa em modo cliente", SetName = "ModoCliente")]
-        public bool ModoCliente { get; set; }
     }
 
     static void Main(string[] args)
@@ -21,11 +19,31 @@ internal class Program
     }
     static void RunOptions(Options opts)
     {
-        //handle options
+        if (opts.ModoServidor) 
+        {
+            RodarModoServidor();
+        }
+        else
+        {
+            RodarModoCliente();
+        }
     }
+
     static void HandleParseError(IEnumerable<Error> errs)
     {
         //handle errors
+    }
+
+    private static void RodarModoCliente()
+    {
+        Cliente cliente = new Cliente();
+    }
+
+    private static void RodarModoServidor()
+    {
+        Servidor servidor = new Servidor();
+
+
     }
 }
 

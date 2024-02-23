@@ -2,4 +2,5 @@
 
 internal class Servidor
 {
+    Canal canal = new Canal();
 }
