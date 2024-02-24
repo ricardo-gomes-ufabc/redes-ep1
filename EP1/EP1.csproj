@@ -6,16 +6,46 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
     <Configurations>Servidor_Debug;Servidor_Release;Cliente_Debug;Cliente_Release</Configurations>
+    <Platforms>AnyCPU;x64</Platforms>
   </PropertyGroup>
 
-  <ItemGroup>
-    <PackageReference Include="CommandLineParser" Version="2.9.1" />
-  </ItemGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Servidor_Debug|AnyCPU'">
+    <Optimize>False</Optimize>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Servidor_Debug|x64'">
+    <Optimize>False</Optimize>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Servidor_Release|AnyCPU'">
+    <Optimize>True</Optimize>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Servidor_Release|x64'">
+    <Optimize>True</Optimize>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Cliente_Debug|AnyCPU'">
+    <Optimize>False</Optimize>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Cliente_Debug|x64'">
+    <Optimize>False</Optimize>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Cliente_Release|AnyCPU'">
+    <Optimize>True</Optimize>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Cliente_Release|x64'">
+    <Optimize>True</Optimize>
+  </PropertyGroup>
   
   <Choose>
     <When Condition="'$(Configuration)' == 'Servidor_Debug' Or '$(Configuration)' == 'Servidor_Release'">
       <PropertyGroup>
         <StartupObject>EP1.Servidor</StartupObject>
+        <AssemblyName>Servidor</AssemblyName>
       </PropertyGroup>
 
       <ItemGroup>
@@ -27,6 +57,7 @@
     <Otherwise>
       <PropertyGroup>
         <StartupObject>EP1.Cliente</StartupObject>
+        <AssemblyName>Cliente</AssemblyName>
       </PropertyGroup>
     </Otherwise>
   </Choose>  
