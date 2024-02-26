@@ -1,19 +1,22 @@
 ﻿using System.Net;
 using System.Net.Sockets;
-using System.Text;
 using System.Text.Json;
 
 namespace EP1;
 
-internal class Canal : IDisposable
+internal class Canal
 {
     private readonly Random _aleatorio = new Random();
 
+    private readonly object _locker = new object();
+
+    #region Socket
+
     private IPEndPoint _pontoConexaoLocal;
     private IPEndPoint _pontoConexaoRemoto;
+    private readonly UdpClient _socket = new UdpClient();
 
-    private UdpClient emissor = new UdpClient();
-    private UdpClient receptor = new UdpClient();
+    #endregion
 
     #region Configs
 
@@ -31,7 +34,7 @@ internal class Canal : IDisposable
 
     #endregion
 
-    #region Consolidacao
+    #region Consolidação
 
     private uint _totalMensagensEnviadas;
     private uint _totalMensagensRecebidas;
@@ -55,7 +58,9 @@ internal class Canal : IDisposable
         _pontoConexaoLocal = pontoConexaoLocal;
         _modoServidor = modoServidor;
 
-        receptor.Client.ReceiveTimeout = 5000;
+        _socket.Client.Bind(_pontoConexaoLocal);
+
+        _socket.Client.ReceiveTimeout = 15000;
     }
 
     private void CarregarConfigs()
@@ -95,20 +100,45 @@ internal class Canal : IDisposable
 
     #region Envio e Recebimento
 
-    public void EnviarSegmentos(int quantidade)
+    public void EnviarSegmentos(int quantidade, bool modoParalelo)
     {
-        for (int i = 0; i < quantidade; i++)
+        if (modoParalelo)
         {
-            EnviarSegmento(GerarSegmentoUDP(_aleatorio.Next(minValue: 1, maxValue: _tamanhoMaximoBytes * 2)));
+            List<Task> tarefas = new List<Task>();
+
+            for (int i = 0; i < quantidade; i++)
+            {
+                Task tarefa = Task.Run(() =>
+                {
+                    EnviarSegmento(GerarSegmentoUDP(_aleatorio.Next(minValue: 1, maxValue: _tamanhoMaximoBytes * 2)));
+                    ReceberSegmentos();
+                });
+
+                tarefas.Add(tarefa);
+            }
+
+            Task.WaitAll(tarefas.ToArray());
+        }
+        else
+        {
+            for (int i = 0; i < quantidade; i++)
+            {
+                EnviarSegmento(GerarSegmentoUDP(_aleatorio.Next(minValue: 1, maxValue: _tamanhoMaximoBytes * 2)));
+
+                ReceberSegmento();
+            }
         }
     }
 
-    public void EnviarSegmento(byte[] segmento)
+    private void EnviarSegmento(byte[] segmento)
     {
-        Console.WriteLine("Enviando segmento UDP.");
+        _socket.Send(segmento, _pontoConexaoRemoto);
 
-        emissor.Send(segmento, _pontoConexaoRemoto);
-
+        lock (_locker)
+        {
+            _totalMensagensEnviadas++;
+        }
+        
         Console.WriteLine("Segmento UDP enviado");
     }
 
@@ -122,17 +152,27 @@ internal class Canal : IDisposable
         }
     }
 
-    public bool ReceberSegmento()
+    private bool ReceberSegmento()
     {
         try
         {
-            byte[] segmentoRecebido = receptor.Receive(ref _pontoConexaoLocal);
+            byte[] segmentoRecebido = _socket.Receive(ref _pontoConexaoRemoto);
+
+            _totalMensagensRecebidas++;
 
             Console.WriteLine("Segmento UDP recebido.");
 
             byte[] segmentoModificado = segmentoRecebido.ToArray();
 
             AplicarPropriedades(ref segmentoModificado);
+
+            ValidarSegmento(original: segmentoRecebido, modificado: segmentoModificado);
+
+            if (_modoServidor)
+            {
+                EnviarSegmento(GerarSegmentoUDP(_aleatorio.Next(minValue: 1, maxValue: _tamanhoMaximoBytes * 2)));
+                Console.WriteLine("Segmento UDP respondido");
+            }
 
             return true;
 
@@ -145,9 +185,16 @@ internal class Canal : IDisposable
         return false;
     }
 
-    public void ResponderMensagem()
+    private void ValidarSegmento(byte[] original, byte[] modificado)
     {
-        EnviarSegmento(GerarSegmentoUDP(_aleatorio.Next(minValue: 1, maxValue: _tamanhoMaximoBytes * 2)));
+        if (original.Length != modificado.Length)
+        {
+            _totalMensagensCortadas++;
+        }
+        else if(!original.SequenceEqual(modificado))
+        {
+            _totalMensagensCorrompidas++;
+        }
     }
 
     #endregion
@@ -159,6 +206,7 @@ internal class Canal : IDisposable
         if (DeveriaAplicarPropriedade(_probabilidadeEliminacao))
         {
             _totalMensagensEliminadas++;
+            _totalMensagensRecebidas--;
             return;
         }
 
@@ -172,7 +220,7 @@ internal class Canal : IDisposable
 
             if (_modoServidor)
             {
-                ResponderMensagem();
+                EnviarSegmento(GerarSegmentoUDP(_aleatorio.Next(minValue: 1, maxValue: _tamanhoMaximoBytes * 2)));
             }
         }
 
@@ -208,25 +256,25 @@ internal class Canal : IDisposable
 
     #region Finalização
 
-    public void Dispose()
+    public void Fechar()
     {
-        emissor.Close();
-        receptor.Close();
+        ConsolidarResultados();
 
-        emissor.Dispose();
-        receptor.Dispose();
+        _socket.Close();
+
+        _socket.Dispose();
     }
 
-    public void ConsolidarResultados()
+    private void ConsolidarResultados()
     {
-        Console.WriteLine(value: $"/n/n" +
-                                 $"Total de mensagens enviadas: {_totalMensagensEnviadas}" +
-                                 $"Total de mensagens recebidas: {_totalMensagensRecebidas}" +
-                                 $"Total de mensagens eliminadas: {_totalMensagensEliminadas}" +
-                                 $"Total de mensagens atrasadas: {_totalMensagensAtrasadas}" +
-                                 $"Total de mensagens duplicadas: {_totalMensagensDuplicadas}" +
-                                 $"Total de mensagens corrompidas: {_totalMensagensCorrompidas}" +
-                                 $"Total de mensagens cortadas: {_totalMensagensCortadas}");
+        Console.WriteLine(value: $"\n" +
+                                 $"\nTotal de mensagens enviadas: {_totalMensagensEnviadas}" +
+                                 $"\nTotal de mensagens recebidas: {_totalMensagensRecebidas}" +
+                                 $"\nTotal de mensagens eliminadas: {_totalMensagensEliminadas}" +
+                                 $"\nTotal de mensagens atrasadas: {_totalMensagensAtrasadas}" +
+                                 $"\nTotal de mensagens duplicadas: {_totalMensagensDuplicadas}" +
+                                 $"\nTotal de mensagens corrompidas: {_totalMensagensCorrompidas}" +
+                                 $"\nTotal de mensagens cortadas: {_totalMensagensCortadas}");
     }
 
     #endregion

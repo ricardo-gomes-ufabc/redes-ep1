@@ -60,6 +60,12 @@
         <AssemblyName>Cliente</AssemblyName>
       </PropertyGroup>
     </Otherwise>
-  </Choose>  
+  </Choose>
+  
+  <ItemGroup>
+    <None Update="appsettings.json">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
+  </ItemGroup>  
 
 </Project>
