@@ -4,7 +4,7 @@ namespace EP1;
 
 internal class Servidor
 {
-    private static Canal _canal;
+    private static Canal? _canal;
 
     private static void Main()
     {
