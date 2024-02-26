@@ -43,7 +43,7 @@ internal class Cliente
 
             int quantidadeMensagens = Convert.ToInt32(Console.ReadLine());
 
-            _canal.EnviarSegmentos(quantidadeMensagens, modoParalelo);
+            _canal.EnviarMensagens(quantidadeMensagens, modoParalelo);
 
             _canal.Fechar();
         }

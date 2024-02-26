@@ -6,6 +6,8 @@ namespace EP1;
 
 internal class Canal
 {
+    private const int _tamanhoMáximoUDP = 0x10000;
+
     private readonly Random _aleatorio = new Random();
 
     private readonly object _locker = new object();
@@ -87,9 +89,9 @@ internal class Canal
 
     #region Criação UDP
 
-    public byte[] GerarSegmentoUDP(int tamanho)
+    public byte[] GerarSegmentoUDP()
     {
-        byte[] segmento = new byte[tamanho];
+        byte[] segmento = new byte[_aleatorio.Next(minValue: 1, maxValue: _tamanhoMáximoUDP)];
 
         _aleatorio.NextBytes(segmento);
 
@@ -100,7 +102,7 @@ internal class Canal
 
     #region Envio e Recebimento
 
-    public void EnviarSegmentos(int quantidade, bool modoParalelo)
+    public void EnviarMensagens(int quantidade, bool modoParalelo)
     {
         if (modoParalelo)
         {
@@ -110,8 +112,8 @@ internal class Canal
             {
                 Task tarefa = Task.Run(() =>
                 {
-                    EnviarSegmento(GerarSegmentoUDP(_aleatorio.Next(minValue: 1, maxValue: _tamanhoMaximoBytes * 2)));
-                    ReceberSegmentos();
+                    EnviarMensagem(GerarSegmentoUDP());
+                    ReceberMensagens();
                 });
 
                 tarefas.Add(tarefa);
@@ -123,16 +125,16 @@ internal class Canal
         {
             for (int i = 0; i < quantidade; i++)
             {
-                EnviarSegmento(GerarSegmentoUDP(_aleatorio.Next(minValue: 1, maxValue: _tamanhoMaximoBytes * 2)));
+                EnviarMensagem(GerarSegmentoUDP());
 
-                ReceberSegmento();
+                ReceberMensagem();
             }
         }
     }
 
-    private void EnviarSegmento(byte[] segmento)
+    private void EnviarMensagem(byte[] mensagem)
     {
-        _socket.Send(segmento, _pontoConexaoRemoto);
+        _socket.Send(mensagem, _pontoConexaoRemoto);
 
         lock (_locker)
         {
@@ -142,47 +144,54 @@ internal class Canal
         Console.WriteLine("Segmento UDP enviado");
     }
 
-    public void ReceberSegmentos()
+    public void ReceberMensagens()
     {
         bool continuar = true;
 
         while (continuar)
         {
-            continuar = ReceberSegmento();
+            continuar = ReceberMensagem();
         }
     }
 
-    private bool ReceberSegmento()
+    private bool ReceberMensagem()
     {
         try
         {
-            byte[] segmentoRecebido = _socket.Receive(ref _pontoConexaoRemoto);
+            byte[] mensagemRecebida = _socket.Receive(ref _pontoConexaoRemoto);
 
             _totalMensagensRecebidas++;
 
             Console.WriteLine("Segmento UDP recebido.");
 
-            byte[] segmentoModificado = segmentoRecebido.ToArray();
+            byte[] mensagemModificada = mensagemRecebida.ToArray();
 
-            AplicarPropriedades(ref segmentoModificado);
+            AplicarPropriedades(ref mensagemModificada);
 
-            ValidarSegmento(original: segmentoRecebido, modificado: segmentoModificado);
+            ValidarSegmento(original: mensagemRecebida, modificado: mensagemModificada);
 
             if (_modoServidor)
             {
-                EnviarSegmento(GerarSegmentoUDP(_aleatorio.Next(minValue: 1, maxValue: _tamanhoMaximoBytes * 2)));
+                EnviarMensagem(GerarSegmentoUDP());
                 Console.WriteLine("Segmento UDP respondido");
             }
 
             return true;
-
         }
         catch (SocketException ex)
         {
-            Console.WriteLine($"Erro de socket: {ex.Message}");
+            if (!_modoServidor)
+            {
+                Console.WriteLine($"Erro de socket: {ex.Message}");
+            }
+
+            if (ex.SocketErrorCode == SocketError.TimedOut)
+            {
+                return false;
+            }
         }
 
-        return false;
+        return true;
     }
 
     private void ValidarSegmento(byte[] original, byte[] modificado)
@@ -201,7 +210,7 @@ internal class Canal
 
     #region Aplicação de Propiedades
 
-    private void AplicarPropriedades(ref byte[] segmento)
+    private void AplicarPropriedades(ref byte[] mensagem)
     {
         if (DeveriaAplicarPropriedade(_probabilidadeEliminacao))
         {
@@ -220,16 +229,16 @@ internal class Canal
 
             if (_modoServidor)
             {
-                EnviarSegmento(GerarSegmentoUDP(_aleatorio.Next(minValue: 1, maxValue: _tamanhoMaximoBytes * 2)));
+                EnviarMensagem(GerarSegmentoUDP());
             }
         }
 
         if (DeveriaAplicarPropriedade(_probabilidadeCorrupcao))
         {
-            CorromperSegmento(ref segmento);
+            CorromperSegmento(ref mensagem);
         }
 
-        CortarSegmento(ref segmento);
+        CortarSegmento(ref mensagem);
     }
 
     private bool DeveriaAplicarPropriedade(int probabilidade)

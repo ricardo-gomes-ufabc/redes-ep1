@@ -19,7 +19,7 @@ internal class Servidor
             _canal = new Canal(pontoConexaoLocal: pontoConexao, 
                                modoServidor: true);
 
-            _canal.ReceberSegmentos();
+            _canal.ReceberMensagens();
 
             _canal.Fechar();
         }
