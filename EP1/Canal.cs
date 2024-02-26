@@ -1,10 +1,19 @@
-﻿using System.Text.Json;
+﻿using System.Net;
+using System.Net.Sockets;
+using System.Text;
+using System.Text.Json;
 
 namespace EP1;
 
-internal class Canal
+internal class Canal : IDisposable
 {
     private readonly Random _aleatorio = new Random();
+
+    private IPEndPoint _pontoConexaoLocal;
+    private IPEndPoint _pontoConexaoRemoto;
+
+    private UdpClient emissor = new UdpClient();
+    private UdpClient receptor = new UdpClient();
 
     #region Configs
 
@@ -18,8 +27,7 @@ internal class Canal
 
     #region Config Extra
 
-    private int _quantidadeMensagensParaEnviar;
-    private int _probabilidadeDelay = 5;
+    private bool _modoServidor;
 
     #endregion
 
@@ -35,11 +43,19 @@ internal class Canal
 
     #endregion
 
-    public Canal(int quantidadeMensagensParaEnviar)
+    public Canal(IPEndPoint pontoConexaoLocal, IPEndPoint pontoConexaoRemoto, bool modoServidor) : this(pontoConexaoLocal, modoServidor)
+    {
+        _pontoConexaoRemoto = pontoConexaoRemoto;
+    }
+
+    public Canal(IPEndPoint pontoConexaoLocal, bool modoServidor)
     {
         CarregarConfigs();
 
-        _quantidadeMensagensParaEnviar = quantidadeMensagensParaEnviar;
+        _pontoConexaoLocal = pontoConexaoLocal;
+        _modoServidor = modoServidor;
+
+        receptor.Client.ReceiveTimeout = 5000;
     }
 
     private void CarregarConfigs()
@@ -54,7 +70,7 @@ internal class Canal
             int delayMilissegundos = root.GetProperty("DelayMilissegundos").GetInt32();
             int porcentagemTaxaDuplicacao = root.GetProperty("ProbabilidadeDuplicacao").GetInt32();
             int porcentagemTaxaCorrupcao = root.GetProperty("ProbabilidadeCorrupcao").GetInt32();
-            int tamanhoMaximoBytes = root.GetProperty("TamanhoMaximoBytes").GeInt32();
+            int tamanhoMaximoBytes = root.GetProperty("TamanhoMaximoBytes").GetInt32();
 
             _probabilidadeEliminacao = porcentagemTaxaEliminacao;
             _delayMilissegundos = delayMilissegundos;
@@ -64,51 +80,108 @@ internal class Canal
         }
     }
 
-    #region Envio e Recebimento
+    #region Criação UDP
 
-    public void EnviarMensagem(byte[] mensagem)
+    public byte[] GerarSegmentoUDP(int tamanho)
     {
+        byte[] segmento = new byte[tamanho];
 
-    }
+        _aleatorio.NextBytes(segmento);
 
-    public byte[]? ReceberMensagem()
-    {
-        byte[]? mensagem = null;
-
-
-
-        return mensagem;
+        return segmento;
     }
 
     #endregion
 
-    #region Aplicacao de Propiedades
+    #region Envio e Recebimento
 
-    private byte[]? AplicarPropriedades(byte[] mensagem)
+    public void EnviarSegmentos(int quantidade)
+    {
+        for (int i = 0; i < quantidade; i++)
+        {
+            EnviarSegmento(GerarSegmentoUDP(_aleatorio.Next(minValue: 1, maxValue: _tamanhoMaximoBytes * 2)));
+        }
+    }
+
+    public void EnviarSegmento(byte[] segmento)
+    {
+        Console.WriteLine("Enviando segmento UDP.");
+
+        emissor.Send(segmento, _pontoConexaoRemoto);
+
+        Console.WriteLine("Segmento UDP enviado");
+    }
+
+    public void ReceberSegmentos()
+    {
+        bool continuar = true;
+
+        while (continuar)
+        {
+            continuar = ReceberSegmento();
+        }
+    }
+
+    public bool ReceberSegmento()
+    {
+        try
+        {
+            byte[] segmentoRecebido = receptor.Receive(ref _pontoConexaoLocal);
+
+            Console.WriteLine("Segmento UDP recebido.");
+
+            byte[] segmentoModificado = segmentoRecebido.ToArray();
+
+            AplicarPropriedades(ref segmentoModificado);
+
+            return true;
+
+        }
+        catch (SocketException ex)
+        {
+            Console.WriteLine($"Erro de socket: {ex.Message}");
+        }
+
+        return false;
+    }
+
+    public void ResponderMensagem()
+    {
+        EnviarSegmento(GerarSegmentoUDP(_aleatorio.Next(minValue: 1, maxValue: _tamanhoMaximoBytes * 2)));
+    }
+
+    #endregion
+
+    #region Aplicação de Propiedades
+
+    private void AplicarPropriedades(ref byte[] segmento)
     {
         if (DeveriaAplicarPropriedade(_probabilidadeEliminacao))
         {
-            return null;
+            _totalMensagensEliminadas++;
+            return;
         }
 
-        if (DeveriaAplicarPropriedade(_probabilidadeDelay))
-        {
-            Task.Delay(_delayMilissegundos).Wait();
-        }
+        Task.Delay(_delayMilissegundos).Wait();
+        _totalMensagensAtrasadas++;
 
         if (DeveriaAplicarPropriedade(_probabilidadeDuplicacao))
         {
-            
+            _totalMensagensDuplicadas++;
+            _totalMensagensRecebidas++;
+
+            if (_modoServidor)
+            {
+                ResponderMensagem();
+            }
         }
 
         if (DeveriaAplicarPropriedade(_probabilidadeCorrupcao))
         {
-            mensagem = CorromperSegmento(mensagem);
+            CorromperSegmento(ref segmento);
         }
 
-        mensagem = CortarSegmento(mensagem);
-
-        return mensagem;
+        CortarSegmento(ref segmento);
     }
 
     private bool DeveriaAplicarPropriedade(int probabilidade)
@@ -116,30 +189,48 @@ internal class Canal
         return _aleatorio.Next(minValue: 0, maxValue: 101) <= probabilidade;
     }
 
-    private byte[] CorromperSegmento(byte[] mensagem)
+    private void CorromperSegmento(ref byte[] segmento)
     {
-        int indice = _aleatorio.Next(minValue: 0, maxValue: mensagem.Length);
-        mensagem[indice] = (byte)(~mensagem[indice]);
-        return mensagem;
+        int indice = _aleatorio.Next(minValue: 0, maxValue: segmento.Length);
+
+        segmento[indice] = (byte)(~segmento[indice]); ;
     }
 
-    private byte[] CortarSegmento(byte[] mensagem)
+    private void CortarSegmento(ref byte[] segmento)
     {
-        if (mensagem.Length > _tamanhoMaximoBytes)
+        if (segmento.Length > _tamanhoMaximoBytes)
         {
-            Array.Resize(ref mensagem, _tamanhoMaximoBytes);
+            Array.Resize(ref segmento, _tamanhoMaximoBytes);
         }
-
-        return mensagem;
     }
 
     #endregion
 
-    public byte[] GenerateRandomUdpMessage(int tamanho)
+    #region Finalização
+
+    public void Dispose()
     {
-        byte[] mensagem = new byte[tamanho];
-        _aleatorio.NextBytes(mensagem);
-        return mensagem;
+        emissor.Close();
+        receptor.Close();
+
+        emissor.Dispose();
+        receptor.Dispose();
     }
+
+    public void ConsolidarResultados()
+    {
+        Console.WriteLine(value: $"/n/n" +
+                                 $"Total de mensagens enviadas: {_totalMensagensEnviadas}" +
+                                 $"Total de mensagens recebidas: {_totalMensagensRecebidas}" +
+                                 $"Total de mensagens eliminadas: {_totalMensagensEliminadas}" +
+                                 $"Total de mensagens atrasadas: {_totalMensagensAtrasadas}" +
+                                 $"Total de mensagens duplicadas: {_totalMensagensDuplicadas}" +
+                                 $"Total de mensagens corrompidas: {_totalMensagensCorrompidas}" +
+                                 $"Total de mensagens cortadas: {_totalMensagensCortadas}");
+    }
+
+    #endregion
+
+
 }
 
