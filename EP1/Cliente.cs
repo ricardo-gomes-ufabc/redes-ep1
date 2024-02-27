@@ -24,7 +24,7 @@ internal class Cliente
 
             int portaServidor = Convert.ToInt32(Console.ReadLine());
 
-            IPEndPoint pontoConexaoRemoto;
+            IPEndPoint? pontoConexaoRemoto;
 
             pontoConexaoRemoto = string.IsNullOrEmpty(ipServidor) ? 
                                  new IPEndPoint(IPAddress.Loopback, portaServidor) : 

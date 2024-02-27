@@ -10,6 +10,10 @@ internal class Canal
 
     private readonly object _locker = new object();
 
+    private const int TamanhoMaximoUdp = 2048;
+
+    private Memory<byte> _bufferReceptor = new byte[TamanhoMaximoUdp];
+
     #region Socket
 
     private IPEndPoint _pontoConexaoLocal;
@@ -45,17 +49,13 @@ internal class Canal
     private uint _totalMensagensCortadas;
 
     #endregion
-
-    public Canal(IPEndPoint pontoConexaoLocal, IPEndPoint pontoConexaoRemoto, bool modoServidor) : this(pontoConexaoLocal, modoServidor)
-    {
-        _pontoConexaoRemoto = pontoConexaoRemoto;
-    }
-
-    public Canal(IPEndPoint pontoConexaoLocal, bool modoServidor)
+    
+    public Canal(IPEndPoint pontoConexaoLocal, IPEndPoint? pontoConexaoRemoto, bool modoServidor)
     {
         CarregarConfigs();
 
         _pontoConexaoLocal = pontoConexaoLocal;
+        _pontoConexaoRemoto = pontoConexaoRemoto;
         _modoServidor = modoServidor;
 
         _socket.Client.Bind(_pontoConexaoLocal);
@@ -89,7 +89,7 @@ internal class Canal
 
     public byte[] GerarSegmentoUDP()
     {
-        byte[] segmento = new byte[_aleatorio.Next(minValue: 1, maxValue: 1024)];
+        byte[] segmento = new byte[_aleatorio.Next(minValue: 1, maxValue: TamanhoMaximoUdp)];
 
         _aleatorio.NextBytes(segmento);
 
@@ -111,7 +111,7 @@ internal class Canal
                 Thread thread = new Thread(() =>
                 {
                     EnviarMensagem(GerarSegmentoUDP());
-                    ReceberMensagem();
+                    ReceberMensagem().Wait();
                 });
 
                 threads.Add(thread);
@@ -130,7 +130,7 @@ internal class Canal
             {
                 EnviarMensagem(GerarSegmentoUDP());
 
-                ReceberMensagem();
+                ReceberMensagem().Wait();
             }
         }
     }
@@ -153,25 +153,29 @@ internal class Canal
 
         while (continuar)
         {
-            continuar = ReceberMensagem();
+            continuar = ReceberMensagem().Result;
         }
     }
 
-    private bool ReceberMensagem()
+    private async Task<bool> ReceberMensagem()
     {
         try
         {
-            byte[] mensagemRecebida = _socket.Receive(ref _pontoConexaoRemoto);
+            SocketReceiveFromResult resultado = await _socket.Client.ReceiveFromAsync(_bufferReceptor, _pontoConexaoRemoto!);
+
+            int quantidadeBytesRecebidos = resultado.ReceivedBytes;
+
+            _pontoConexaoRemoto = (IPEndPoint?) resultado.RemoteEndPoint;
 
             _totalMensagensRecebidas++;
 
             Console.WriteLine("Segmento UDP recebido.");
 
-            byte[] mensagemModificada = mensagemRecebida.ToArray();
+            byte[] mensagemModificada = _bufferReceptor.Slice(start: 0, quantidadeBytesRecebidos).ToArray();
 
             bool mensagemEliminada = AplicarPropriedades(ref mensagemModificada);
 
-            ValidarSegmento(original: mensagemRecebida, modificado: mensagemModificada);
+            ValidarSegmento(original: _bufferReceptor, modificado: mensagemModificada, quantidadeBytesRecebidos);
 
             if (_modoServidor && !mensagemEliminada)
             {
@@ -197,13 +201,13 @@ internal class Canal
         return true;
     }
 
-    private void ValidarSegmento(byte[] original, byte[] modificado)
+    private void ValidarSegmento(Memory<byte> original, byte[] modificado, int tamanho)
     {
-        if (original.Length != modificado.Length)
+        if (tamanho != modificado.Length)
         {
             _totalMensagensCortadas++;
         }
-        else if(!original.SequenceEqual(modificado))
+        else if(!original.Span.SequenceEqual(modificado))
         {
             _totalMensagensCorrompidas++;
         }
@@ -292,7 +296,5 @@ internal class Canal
     }
 
     #endregion
-
-
 }
 
