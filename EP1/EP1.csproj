@@ -7,6 +7,7 @@
     <Nullable>enable</Nullable>
     <Configurations>Servidor_Debug;Servidor_Release;Cliente_Debug;Cliente_Release</Configurations>
     <Platforms>AnyCPU;x64</Platforms>
+    <SelfContained>True</SelfContained>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Servidor_Debug|AnyCPU'">
