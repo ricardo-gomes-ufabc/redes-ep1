@@ -83,7 +83,7 @@ internal class Cliente
                             throw;
                         }
 
-                        Console.WriteLine($"Mensagem de resposta perdida.");
+                        Console.WriteLine($"Mensagem de resposta nunca chegou.");
                     }
                 });
 

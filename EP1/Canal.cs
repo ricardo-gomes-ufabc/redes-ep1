@@ -7,8 +7,8 @@ namespace EP1;
 internal class Canal
 {
     private readonly Random _aleatorio = new Random();
-
     private readonly object _locker = new object();
+    public int _mensagensResponder { get; private set; }
 
     #region Socket
 
@@ -59,6 +59,7 @@ internal class Canal
         _modoServidor = modoServidor;
 
         _socket.Client.Bind(_pontoConexaoLocal);
+        _socket.Client.ReceiveTimeout = 30000;
     }
 
     private void CarregarConfigs()
@@ -132,7 +133,7 @@ internal class Canal
 
             ValidarSegmento(original: mensagemRecebida, modificado: mensagemModificada);
 
-            return mensagemEliminada;
+            return !mensagemEliminada;
         }
     }
 

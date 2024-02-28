@@ -48,7 +48,7 @@ internal class Servidor
     {
         byte[]? bufferReceptor;
 
-        using (var timer = new Timer(_ => tokenCancelamento.Cancel(), null, TimeSpan.FromSeconds(15), TimeSpan.FromMilliseconds(-1)))
+        using (Timer? timer = new Timer(_ => tokenCancelamento.Cancel(), null, TimeSpan.FromSeconds(15), TimeSpan.FromMilliseconds(-1)))
         {
             try
             {
@@ -60,19 +60,16 @@ internal class Servidor
                         continue;
                     }
 
+                    timer.Change(TimeSpan.FromSeconds(15), Timeout.InfiniteTimeSpan);
+
                     bufferReceptor = _canal?.ReceberMensagem();
 
-                    Thread responder = new Thread(() =>
+                    if (_canal != null && _canal.ProcessarMensagem(bufferReceptor) )
                     {
-                        if (_canal != null && _canal.ProcessarMensagem(bufferReceptor))
-                        {
-                            Console.WriteLine($"Mensagem UDP recebida.");
-                            _canal?.EnviarMensagem(_canal.GerarMensagemUdp());
-                            Console.WriteLine("Mensagem UDP respondida");
-                        }
-                    });
-
-                    responder.Start();
+                        Console.WriteLine($"Mensagem UDP recebida.");
+                        _canal?.EnviarMensagem(_canal.GerarMensagemUdp());
+                        Console.WriteLine("Mensagem UDP respondida");
+                    }
                 }
             }
             catch (SocketException e)
