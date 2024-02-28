@@ -1,0 +1,8 @@
+{
+  "profiles": {
+    "EP1": {
+      "commandName": "Project",
+      "commandLineArgs": "-s"
+    }
+  }
+}

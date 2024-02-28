@@ -1,0 +1,43 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+VisualStudioVersion = 17.8.34330.188
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "EP1", "EP1.csproj", "{50F5C62B-E606-4854-A5FD-11E2561EAC3A}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Cliente_Debug|Any CPU = Cliente_Debug|Any CPU
+		Cliente_Debug|x64 = Cliente_Debug|x64
+		Cliente_Release|Any CPU = Cliente_Release|Any CPU
+		Cliente_Release|x64 = Cliente_Release|x64
+		Servidor_Debug|Any CPU = Servidor_Debug|Any CPU
+		Servidor_Debug|x64 = Servidor_Debug|x64
+		Servidor_Release|Any CPU = Servidor_Release|Any CPU
+		Servidor_Release|x64 = Servidor_Release|x64
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{50F5C62B-E606-4854-A5FD-11E2561EAC3A}.Cliente_Debug|Any CPU.ActiveCfg = Cliente_Debug|Any CPU
+		{50F5C62B-E606-4854-A5FD-11E2561EAC3A}.Cliente_Debug|Any CPU.Build.0 = Cliente_Debug|Any CPU
+		{50F5C62B-E606-4854-A5FD-11E2561EAC3A}.Cliente_Debug|x64.ActiveCfg = Cliente_Debug|x64
+		{50F5C62B-E606-4854-A5FD-11E2561EAC3A}.Cliente_Debug|x64.Build.0 = Cliente_Debug|x64
+		{50F5C62B-E606-4854-A5FD-11E2561EAC3A}.Cliente_Release|Any CPU.ActiveCfg = Cliente_Release|Any CPU
+		{50F5C62B-E606-4854-A5FD-11E2561EAC3A}.Cliente_Release|Any CPU.Build.0 = Cliente_Release|Any CPU
+		{50F5C62B-E606-4854-A5FD-11E2561EAC3A}.Cliente_Release|x64.ActiveCfg = Cliente_Release|x64
+		{50F5C62B-E606-4854-A5FD-11E2561EAC3A}.Cliente_Release|x64.Build.0 = Cliente_Release|x64
+		{50F5C62B-E606-4854-A5FD-11E2561EAC3A}.Servidor_Debug|Any CPU.ActiveCfg = Servidor_Debug|Any CPU
+		{50F5C62B-E606-4854-A5FD-11E2561EAC3A}.Servidor_Debug|Any CPU.Build.0 = Servidor_Debug|Any CPU
+		{50F5C62B-E606-4854-A5FD-11E2561EAC3A}.Servidor_Debug|x64.ActiveCfg = Servidor_Debug|x64
+		{50F5C62B-E606-4854-A5FD-11E2561EAC3A}.Servidor_Debug|x64.Build.0 = Servidor_Debug|x64
+		{50F5C62B-E606-4854-A5FD-11E2561EAC3A}.Servidor_Release|Any CPU.ActiveCfg = Servidor_Release|Any CPU
+		{50F5C62B-E606-4854-A5FD-11E2561EAC3A}.Servidor_Release|Any CPU.Build.0 = Servidor_Release|Any CPU
+		{50F5C62B-E606-4854-A5FD-11E2561EAC3A}.Servidor_Release|x64.ActiveCfg = Servidor_Release|x64
+		{50F5C62B-E606-4854-A5FD-11E2561EAC3A}.Servidor_Release|x64.Build.0 = Servidor_Release|x64
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {FDF99F2B-780D-450F-8F2B-5A038212141F}
+	EndGlobalSection
+EndGlobal
