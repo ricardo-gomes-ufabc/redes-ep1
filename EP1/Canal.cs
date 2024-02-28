@@ -87,7 +87,7 @@ internal class Canal
 
     #region Criação UDP
 
-    public byte[] GerarSegmentoUDP()
+    public byte[] GerarMensagemUdp()
     {
         byte[] segmento = new byte[_aleatorio.Next(minValue: 1, maxValue: 1024)];
 
@@ -100,42 +100,7 @@ internal class Canal
 
     #region Envio e Recebimento
 
-    public void EnviarMensagens(int quantidade, bool modoParalelo)
-    {
-        if (modoParalelo)
-        {
-            List<Thread> threads = new List<Thread>();
-
-            for (int i = 0; i < quantidade; i++)
-            {
-                Thread thread = new Thread(() =>
-                {
-                    EnviarMensagem(GerarSegmentoUDP());
-                    ReceberMensagem();
-                });
-
-                threads.Add(thread);
-
-                thread.Start();
-            }
-
-            foreach (Thread thread in threads)
-            {
-                thread.Join();
-            }
-        }
-        else
-        {
-            for (int i = 0; i < quantidade; i++)
-            {
-                EnviarMensagem(GerarSegmentoUDP());
-
-                ReceberMensagem();
-            }
-        }
-    }
-
-    private void EnviarMensagem(byte[] mensagem)
+    public void EnviarMensagem(byte[] mensagem)
     {
         _socket.Send(mensagem, _pontoConexaoRemoto);
 
@@ -144,28 +109,26 @@ internal class Canal
             _totalMensagensEnviadas++;
         }
         
-        Console.WriteLine("Segmento UDP enviado");
+        Console.WriteLine("Mensagem UDP enviada");
     }
 
-    public void ReceberMensagens()
+    public byte[]? ReceberMensagem()
     {
-        bool continuar = true;
-
-        while (continuar)
-        {
-            continuar = ReceberMensagem();
-        }
+       return _socket.Receive(ref _pontoConexaoRemoto);
     }
 
-    private bool ReceberMensagem()
+    public bool ProcessarMensagem(byte[]? mensagemRecebida)
     {
-        try
+        lock (_locker)
         {
-            byte[] mensagemRecebida = _socket.Receive(ref _pontoConexaoRemoto);
+            if (mensagemRecebida == null)
+            {
+                return false;
+            }
 
             _totalMensagensRecebidas++;
 
-            Console.WriteLine("Segmento UDP recebido.");
+            Console.WriteLine("Mensagem UDP recebida.");
 
             byte[] mensagemModificada = mensagemRecebida.ToArray();
 
@@ -173,28 +136,8 @@ internal class Canal
 
             ValidarSegmento(original: mensagemRecebida, modificado: mensagemModificada);
 
-            if (_modoServidor && !mensagemEliminada)
-            {
-                EnviarMensagem(GerarSegmentoUDP());
-                Console.WriteLine("Segmento UDP respondido");
-            }
-
-            return true;
+            return mensagemEliminada;
         }
-        catch (SocketException e)
-        {
-            if (!_modoServidor)
-            {
-                Console.WriteLine($"Erro de socket: {e.Message}");
-            }
-
-            if (e.SocketErrorCode == SocketError.TimedOut)
-            {
-                return false;
-            }
-        }
-
-        return true;
     }
 
     private void ValidarSegmento(byte[] original, byte[] modificado)
@@ -219,26 +162,30 @@ internal class Canal
         {
             _totalMensagensEliminadas++;
             _totalMensagensRecebidas--;
+            Console.WriteLine("Mensagem eliminada.");
             return true;
         }
 
         Thread.Sleep(_delayMilissegundos);
         _totalMensagensAtrasadas++;
+        Console.WriteLine("Mensagem atrasada.");
 
         if (DeveriaAplicarPropriedade(_probabilidadeDuplicacao))
         {
             _totalMensagensDuplicadas++;
             _totalMensagensRecebidas++;
+            Console.WriteLine("Mensagem duplicada.");
 
             if (_modoServidor)
             {
-                EnviarMensagem(GerarSegmentoUDP());
+                EnviarMensagem(GerarMensagemUdp());
             }
         }
 
         if (DeveriaAplicarPropriedade(_probabilidadeCorrupcao))
         {
             CorromperSegmento(ref mensagem);
+            Console.WriteLine("Mensagem corrompida.");
         }
 
         CortarSegmento(ref mensagem);
@@ -263,6 +210,7 @@ internal class Canal
         if (segmento.Length > _tamanhoMaximoBytes)
         {
             Array.Resize(ref segmento, _tamanhoMaximoBytes);
+            Console.WriteLine("Mensagem cortada.");
         }
     }
 

@@ -1,4 +1,5 @@
 ﻿using System.Net;
+using System.Net.Sockets;
 
 namespace EP1;
 
@@ -19,7 +20,7 @@ internal class Servidor
             _canal = new Canal(pontoConexaoLocal: pontoConexao, 
                                modoServidor: true);
 
-            _canal.ReceberMensagens();
+            ReceberMensagens();
 
             _canal.Fechar();
         }
@@ -27,6 +28,37 @@ internal class Servidor
         {
             Console.WriteLine(e.Message);
             throw;
+        }
+    }
+
+    private static void ReceberMensagens()
+    {
+        byte[]? bufferReceptor;
+
+        try
+        {
+            while (true)
+            {
+                bufferReceptor = _canal?.ReceberMensagem();
+
+                Thread responder = new Thread(() =>
+                {
+                    if (_canal != null && _canal.ProcessarMensagem(bufferReceptor))
+                    {
+                        _canal?.EnviarMensagem(_canal.GerarMensagemUdp());
+                        Console.WriteLine("Mensagem UDP respondida");
+                    }
+                });
+
+                responder.Start();
+            }
+        }
+        catch (SocketException e)
+        {
+            if (e.SocketErrorCode != SocketError.TimedOut)
+            {
+                throw;
+            }
         }
     }
 }

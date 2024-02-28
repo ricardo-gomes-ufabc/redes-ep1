@@ -1,4 +1,5 @@
 ﻿using System.Net;
+using System.Net.Sockets;
 
 namespace EP1;
 
@@ -43,7 +44,7 @@ internal class Cliente
 
             int quantidadeMensagens = Convert.ToInt32(Console.ReadLine());
 
-            _canal.EnviarMensagens(quantidadeMensagens, modoParalelo);
+            EnviarMensagens(quantidadeMensagens, modoParalelo);
 
             _canal.Fechar();
         }
@@ -51,6 +52,52 @@ internal class Cliente
         {
             Console.WriteLine(e.Message);
             throw;
+        }
+    }
+
+    private static void EnviarMensagens(int quantidade, bool modoParalelo)
+    {
+        if (modoParalelo)
+        {
+            List<Thread> threads = new List<Thread>();
+
+            for (int i = 0; i < quantidade; i++)
+            {
+                Thread thread = new Thread(() =>
+                {
+                    _canal?.EnviarMensagem(_canal.GerarMensagemUdp());
+
+                    try
+                    {
+                        _canal?.ProcessarMensagem(_canal.ReceberMensagem());
+                    }
+                    catch (SocketException e)
+                    {
+                        if (e.SocketErrorCode != SocketError.TimedOut)
+                        {
+                            throw;
+                        }
+                    }
+                });
+
+                threads.Add(thread);
+
+                thread.Start();
+            }
+
+            foreach (Thread thread in threads)
+            {
+                thread.Join();
+            }
+        }
+        else
+        {
+            for (int i = 0; i < quantidade; i++)
+            {
+                _canal?.EnviarMensagem(_canal.GerarMensagemUdp());
+
+                _canal?.ProcessarMensagem(_canal.ReceberMensagem());
+            }
         }
     }
 }
