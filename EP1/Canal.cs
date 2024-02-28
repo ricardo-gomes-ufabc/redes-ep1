@@ -59,7 +59,11 @@ internal class Canal
         _modoServidor = modoServidor;
 
         _socket.Client.Bind(_pontoConexaoLocal);
-        _socket.Client.ReceiveTimeout = 30000;
+
+        if (!_modoServidor)
+        {
+            _socket.Client.ReceiveTimeout = 10000;
+        }
     }
 
     private void CarregarConfigs()

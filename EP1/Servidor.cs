@@ -48,7 +48,9 @@ internal class Servidor
     {
         byte[]? bufferReceptor;
 
-        using (Timer? timer = new Timer(_ => tokenCancelamento.Cancel(), null, TimeSpan.FromSeconds(15), TimeSpan.FromMilliseconds(-1)))
+        double timeoutSegundos = 15;
+
+        using (Timer? timer = new Timer(_ => tokenCancelamento.Cancel(), null, TimeSpan.FromSeconds(timeoutSegundos), TimeSpan.FromMilliseconds(-1)))
         {
             try
             {
@@ -60,14 +62,16 @@ internal class Servidor
                         continue;
                     }
 
-                    timer.Change(TimeSpan.FromSeconds(15), Timeout.InfiniteTimeSpan);
+                    timer.Change(TimeSpan.FromSeconds(timeoutSegundos), Timeout.InfiniteTimeSpan);
 
                     bufferReceptor = _canal?.ReceberMensagem();
 
                     if (_canal != null && _canal.ProcessarMensagem(bufferReceptor) )
                     {
                         Console.WriteLine($"Mensagem UDP recebida.");
+
                         _canal?.EnviarMensagem(_canal.GerarMensagemUdp());
+
                         Console.WriteLine("Mensagem UDP respondida");
                     }
                 }

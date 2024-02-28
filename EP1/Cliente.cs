@@ -103,7 +103,24 @@ internal class Cliente
             {
                 _canal?.EnviarMensagem(_canal.GerarMensagemUdp());
 
-                _canal?.ProcessarMensagem(_canal.ReceberMensagem());
+                try
+                {
+                    if (_canal != null && _canal.ProcessarMensagem(_canal.ReceberMensagem()))
+                    {
+                        Console.WriteLine($"Mensagem de resposta recebida.");
+                    }
+                }
+                catch (SocketException e)
+                {
+                    if (e.SocketErrorCode != SocketError.TimedOut)
+                    {
+                        throw;
+                    }
+
+                    Console.WriteLine($"Mensagem de resposta nunca chegou.");
+                }
+
+                Thread.Sleep(50);
             }
         }
     }
