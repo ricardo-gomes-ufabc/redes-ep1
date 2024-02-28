@@ -54,7 +54,7 @@ internal class Servidor
             {
                 while (!tokenCancelamento.IsCancellationRequested)
                 {
-                    if (_canal is { _socket.Available: 0 })
+                    if (_canal != null && _canal._socket.Available == 0 )
                     {
                         Thread.Sleep(100);
                         continue;
@@ -80,10 +80,5 @@ internal class Servidor
                 }
             }
         }
-    }
-
-    static void TimerCallback(object state)
-    {
-        throw new SocketException((int)SocketError.TimedOut);
     }
 }
