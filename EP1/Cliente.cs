@@ -65,27 +65,7 @@ internal class Cliente
 
             for (int i = 0; i < quantidade; i++)
             {
-                Thread thread = new Thread(() =>
-                {
-                    _canal?.EnviarMensagem(_canal.GerarMensagemUdp());
-
-                    try
-                    {
-                        if (_canal != null && _canal.ProcessarMensagem(_canal.ReceberMensagem()))
-                        {
-                            Console.WriteLine($"Mensagem de resposta recebida.");
-                        }
-                    }
-                    catch (SocketException e)
-                    {
-                        if (e.SocketErrorCode != SocketError.TimedOut)
-                        {
-                            throw;
-                        }
-
-                        Console.WriteLine($"Mensagem de resposta nunca chegou.");
-                    }
-                });
+                Thread thread = new Thread(EnvioMensagem);
 
                 threads.Add(thread);
 
@@ -101,27 +81,30 @@ internal class Cliente
         {
             for (int i = 0; i < quantidade; i++)
             {
-                _canal?.EnviarMensagem(_canal.GerarMensagemUdp());
-
-                try
-                {
-                    if (_canal != null && _canal.ProcessarMensagem(_canal.ReceberMensagem()))
-                    {
-                        Console.WriteLine($"Mensagem de resposta recebida.");
-                    }
-                }
-                catch (SocketException e)
-                {
-                    if (e.SocketErrorCode != SocketError.TimedOut)
-                    {
-                        throw;
-                    }
-
-                    Console.WriteLine($"Mensagem de resposta nunca chegou.");
-                }
-
-                Thread.Sleep(50);
+                EnvioMensagem();
             }
+        }
+    }
+
+    private static void EnvioMensagem()
+    {
+        _canal?.EnviarMensagem(_canal.GerarMensagemUdp());
+
+        try
+        {
+            if (_canal != null && _canal.ProcessarMensagem(_canal.ReceberMensagem()))
+            {
+                Console.WriteLine($"Mensagem de resposta recebida.");
+            }
+        }
+        catch (SocketException e)
+        {
+            if (e.SocketErrorCode != SocketError.TimedOut)
+            {
+                throw;
+            }
+
+            Console.WriteLine($"Mensagem de resposta nunca chegou.");
         }
     }
 }
