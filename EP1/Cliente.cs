@@ -46,6 +46,8 @@ internal class Cliente
 
             EnviarMensagens(quantidadeMensagens, modoParalelo);
 
+            Console.WriteLine("Cliente encerrado.");
+
             _canal.Fechar();
         }
         catch (Exception e)
@@ -69,7 +71,10 @@ internal class Cliente
 
                     try
                     {
-                        _canal?.ProcessarMensagem(_canal.ReceberMensagem());
+                        if (_canal != null && _canal.ProcessarMensagem(_canal.ReceberMensagem()))
+                        {
+                            Console.WriteLine($"Mensagem de resposta recebida.");
+                        }
                     }
                     catch (SocketException e)
                     {
@@ -77,6 +82,8 @@ internal class Cliente
                         {
                             throw;
                         }
+
+                        Console.WriteLine($"Mensagem de resposta perdida.");
                     }
                 });
 

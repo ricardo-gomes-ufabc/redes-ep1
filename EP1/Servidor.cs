@@ -20,9 +20,22 @@ internal class Servidor
             _canal = new Canal(pontoConexaoLocal: pontoConexao, 
                                modoServidor: true);
 
-            ReceberMensagens();
+            CancellationTokenSource fonteTokenCancelamento = new CancellationTokenSource();
 
-            _canal.Fechar();
+            try
+            {
+                Task.Run(() => ReceberMensagens(fonteTokenCancelamento));
+
+                Task.Delay(-1).Wait(fonteTokenCancelamento.Token);
+            }
+            catch (OperationCanceledException)
+            {
+                Console.WriteLine("Servidor encerrado.");
+            }
+            finally
+            {
+                _canal.Fechar();
+            }
         }
         catch (Exception e)
         {
@@ -31,34 +44,49 @@ internal class Servidor
         }
     }
 
-    private static void ReceberMensagens()
+    private static void ReceberMensagens(CancellationTokenSource tokenCancelamento)
     {
         byte[]? bufferReceptor;
 
-        try
+        using (var timer = new Timer(_ => tokenCancelamento.Cancel(), null, TimeSpan.FromSeconds(15), TimeSpan.FromMilliseconds(-1)))
         {
-            while (true)
+            try
             {
-                bufferReceptor = _canal?.ReceberMensagem();
-
-                Thread responder = new Thread(() =>
+                while (!tokenCancelamento.IsCancellationRequested)
                 {
-                    if (_canal != null && _canal.ProcessarMensagem(bufferReceptor))
+                    if (_canal is { _socket.Available: 0 })
                     {
-                        _canal?.EnviarMensagem(_canal.GerarMensagemUdp());
-                        Console.WriteLine("Mensagem UDP respondida");
+                        Thread.Sleep(100);
+                        continue;
                     }
-                });
 
-                responder.Start();
+                    bufferReceptor = _canal?.ReceberMensagem();
+
+                    Thread responder = new Thread(() =>
+                    {
+                        if (_canal != null && _canal.ProcessarMensagem(bufferReceptor))
+                        {
+                            Console.WriteLine($"Mensagem UDP recebida.");
+                            _canal?.EnviarMensagem(_canal.GerarMensagemUdp());
+                            Console.WriteLine("Mensagem UDP respondida");
+                        }
+                    });
+
+                    responder.Start();
+                }
             }
-        }
-        catch (SocketException e)
-        {
-            if (e.SocketErrorCode != SocketError.TimedOut)
+            catch (SocketException e)
             {
-                throw;
+                if (e.SocketErrorCode != SocketError.TimedOut)
+                {
+                    throw;
+                }
             }
         }
+    }
+
+    static void TimerCallback(object state)
+    {
+        throw new SocketException((int)SocketError.TimedOut);
     }
 }

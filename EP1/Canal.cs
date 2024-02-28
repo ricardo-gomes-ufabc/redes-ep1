@@ -14,7 +14,7 @@ internal class Canal
 
     private IPEndPoint _pontoConexaoLocal;
     private IPEndPoint? _pontoConexaoRemoto;
-    private readonly UdpClient _socket = new UdpClient();
+    public readonly UdpClient _socket = new UdpClient();
 
     #endregion
 
@@ -59,8 +59,6 @@ internal class Canal
         _modoServidor = modoServidor;
 
         _socket.Client.Bind(_pontoConexaoLocal);
-
-        _socket.Client.ReceiveTimeout = modoServidor ? 15000 : 30000;
     }
 
     private void CarregarConfigs()
@@ -127,8 +125,6 @@ internal class Canal
             }
 
             _totalMensagensRecebidas++;
-
-            Console.WriteLine("Mensagem UDP recebida.");
 
             byte[] mensagemModificada = mensagemRecebida.ToArray();
 
