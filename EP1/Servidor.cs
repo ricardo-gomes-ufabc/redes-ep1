@@ -24,9 +24,7 @@ internal class Servidor
 
             try
             {
-                Task.Run(() => ReceberMensagens(fonteTokenCancelamento));
-
-                Task.Delay(-1).Wait(fonteTokenCancelamento.Token);
+                Task.Run(() => ReceberMensagens(fonteTokenCancelamento)).Wait(fonteTokenCancelamento.Token);
             }
             catch (OperationCanceledException)
             {
