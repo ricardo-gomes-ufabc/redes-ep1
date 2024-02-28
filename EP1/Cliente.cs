@@ -15,7 +15,7 @@ internal class Cliente
 
             int portaCliente = Convert.ToInt32(Console.ReadLine());
 
-            IPEndPoint pontoConexaoLocal = new IPEndPoint(IPAddress.Loopback, portaCliente);
+            IPEndPoint pontoConexaoLocal = new IPEndPoint(IPAddress.Any, portaCliente);
 
             Console.Write("Digite o IP do Servidor: ");
 
@@ -28,7 +28,7 @@ internal class Cliente
             IPEndPoint pontoConexaoRemoto;
 
             pontoConexaoRemoto = string.IsNullOrEmpty(ipServidor) ? 
-                                 new IPEndPoint(IPAddress.Loopback, portaServidor) : 
+                                 new IPEndPoint(IPAddress.Any, portaServidor) : 
                                  new IPEndPoint(IPAddress.Parse(ipServidor), portaServidor);
 
             _canal = new Canal(pontoConexaoRemoto: pontoConexaoRemoto,

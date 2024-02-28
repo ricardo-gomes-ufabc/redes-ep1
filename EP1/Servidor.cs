@@ -15,7 +15,7 @@ internal class Servidor
 
             int porta = Convert.ToInt32(Console.ReadLine());
 
-            IPEndPoint pontoConexao = new IPEndPoint(IPAddress.Loopback, porta);
+            IPEndPoint pontoConexao = new IPEndPoint(IPAddress.Any, porta);
 
             _canal = new Canal(pontoConexaoLocal: pontoConexao, 
                                modoServidor: true);
