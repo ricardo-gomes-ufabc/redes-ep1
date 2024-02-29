@@ -167,9 +167,12 @@ internal class Canal
             return true;
         }
 
-        Thread.Sleep(_delayMilissegundos);
-        _totalMensagensAtrasadas++;
-        Console.WriteLine("Mensagem atrasada.");
+        if (_delayMilissegundos != 0)
+        {
+            Thread.Sleep(_delayMilissegundos);
+            _totalMensagensAtrasadas++;
+            Console.WriteLine("Mensagem atrasada.");
+        }
 
         if (DeveriaAplicarPropriedade(_probabilidadeDuplicacao))
         {
