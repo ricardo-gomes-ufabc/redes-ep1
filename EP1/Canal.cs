@@ -8,7 +8,6 @@ internal class Canal
 {
     private readonly Random _aleatorio = new Random();
     private readonly object _locker = new object();
-    public int _mensagensResponder { get; private set; }
 
     #region Socket
 
