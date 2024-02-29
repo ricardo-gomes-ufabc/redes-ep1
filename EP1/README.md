@@ -1,25 +1,37 @@
 # Para realizar a build dos executáveis, rode um dos seguintes commandos:
 
-## Servidor:
+## Compilar ambos os executáveis
 
-### Modo Debug:
+```
+dotnet build -c Servidor_Release --no-incremental; dotnet build -c Cliente_Release --no-incremental
+```
+
+### Observação:
+O projeto deve ser compilado utilizando .NET 8
+
+
+## Extra
+
+### Servidor:
+
+#### Modo Debug:
 ```
 dotnet build -c Servidor_Debug
 ```
 
-### Modo Release:
+#### Modo Release:
 ```
 dotnet build -c Servidor_Release
 ```
 
-## Cliente:
+### Cliente:
 
-### Modo Debug:
+#### Modo Debug:
 ```
 dotnet build -c Cliente_Debug
 ```
 
-### Modo Release:
+#### Modo Release:
 ```
 dotnet build -c Cliente_Release
 ```
