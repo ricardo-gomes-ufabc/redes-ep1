@@ -28,7 +28,7 @@ internal class Cliente
             IPEndPoint pontoConexaoRemoto;
 
             pontoConexaoRemoto = string.IsNullOrEmpty(ipServidor) ? 
-                                 new IPEndPoint(IPAddress.Any, portaServidor) : 
+                                 new IPEndPoint(IPAddress.Loopback, portaServidor) : 
                                  new IPEndPoint(IPAddress.Parse(ipServidor), portaServidor);
 
             _canal = new Canal(pontoConexaoRemoto: pontoConexaoRemoto,
