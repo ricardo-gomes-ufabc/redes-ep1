@@ -62,7 +62,7 @@ internal class Canal
 
         if (!_modoServidor)
         {
-            _socket.Client.ReceiveTimeout = 10000;
+            _socket.Client.ReceiveTimeout = 3000;
         }
     }
 
@@ -117,7 +117,14 @@ internal class Canal
 
     public byte[]? ReceberMensagem()
     {
-       return _socket.Receive(ref _pontoConexaoRemoto);
+        try
+        {
+            return _socket.Receive(ref _pontoConexaoRemoto);
+        }
+        catch
+        {
+            return null;
+        }
     }
 
     public bool ProcessarMensagem(byte[]? mensagemRecebida)

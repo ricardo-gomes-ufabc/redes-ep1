@@ -76,7 +76,7 @@ internal class Servidor
             }
             catch (SocketException e)
             {
-                if (e.SocketErrorCode != SocketError.TimedOut && e.SocketErrorCode != SocketError.ConnectionReset)
+                if (e.SocketErrorCode != SocketError.TimedOut)
                 {
                     throw;
                 }
